@@ -39,11 +39,22 @@ public class RewardsService {
 	}
 	
 	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
+//		for(VisitedLocation visitedLocation : userLocations) {
+//			for(Attraction attraction : attractions) {
+//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+//					if(nearAttraction(visitedLocation, attraction)) {
+//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//					}
+//				}
+//			}
+//		}
+		for (Iterator<VisitedLocation> visitedLocationIterator = userLocations.iterator(); visitedLocationIterator.hasNext(); ) {
+			VisitedLocation visitedLocation = visitedLocationIterator.next();
+			for(Iterator<Attraction> attractionIterator = attractions.iterator(); attractionIterator.hasNext(); ) {
+				Attraction attraction = attractionIterator.next();
 				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 					if(nearAttraction(visitedLocation, attraction)) {
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
