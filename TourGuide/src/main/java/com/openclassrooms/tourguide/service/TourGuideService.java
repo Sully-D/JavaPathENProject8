@@ -39,6 +39,12 @@ public class TourGuideService {
 	public final Tracker tracker;
 	boolean testMode = true;
 
+	/**
+	 * Constructor for TourGuideService class.
+	 *
+	 * @param gpsUtil the GpsUtil object to be used for GPS related operations
+	 * @param rewardsService the RewardsService object to be used for reward calculations
+	 */
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = rewardsService;
@@ -55,16 +61,36 @@ public class TourGuideService {
 		addShutDownHook();
 	}
 
+	/**
+	 * Retrieves the list of rewards associated with the specified User.
+	 *
+	 * @param user the User object for which to retrieve the rewards
+	 * @return a list of UserReward objects representing the rewards for the specified User
+	 */
 	public List<UserReward> getUserRewards(User user) {
 		return user.getUserRewards();
 	}
 
+	/**
+	 * Retrieves the visited location of the specified User. If the User has visited locations recorded,
+	 * the method returns the last visited location. Otherwise, it tracks the User's current location
+	 * using the trackUserLocation method and returns the visited location.
+	 *
+	 * @param user the User object for which to retrieve the visited location
+	 * @return the VisitedLocation object representing the User's visited location
+	 */
 	public VisitedLocation getUserLocation(User user) {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
 				: trackUserLocation(user);
 		return visitedLocation;
 	}
 
+	/**
+	 * Retrieves the User object associated with the specified userName.
+	 *
+	 * @param userName the username of the User to retrieve
+	 * @return the User object corresponding to the specified userName, or null if not found
+	 */
 	public User getUser(String userName) {
 		return internalUserMap.get(userName);
 	}
