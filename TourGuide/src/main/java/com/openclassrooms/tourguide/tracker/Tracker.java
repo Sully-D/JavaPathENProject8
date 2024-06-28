@@ -19,6 +19,11 @@ public class Tracker extends Thread {
 	private final TourGuideService tourGuideService;
 	private boolean stop = false;
 
+	/**
+	 * Constructor for Tracker class.
+	 *
+	 * @param tourGuideService the TourGuideService object to be used for tracking users
+	 */
 	public Tracker(TourGuideService tourGuideService) {
 		this.tourGuideService = tourGuideService;
 
@@ -33,6 +38,13 @@ public class Tracker extends Thread {
 		executorService.shutdownNow();
 	}
 
+	/**
+	 * This method represents the main logic of the Tracker thread.
+	 * It continuously tracks the users by fetching all users from the TourGuideService,
+	 * tracking their locations, and calculating the time elapsed for tracking each user.
+	 * The method also handles the interruption and stopping of the thread based on the stop flag.
+	 * It sleeps for a specified interval before starting the next iteration of tracking.
+	 */
 	@Override
 	public void run() {
 		StopWatch stopWatch = new StopWatch();

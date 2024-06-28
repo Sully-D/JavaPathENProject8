@@ -30,6 +30,18 @@ import gpsUtil.location.VisitedLocation;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
+/**
+ * The TourGuideService class provides methods to manage users, track user locations, calculate rewards,
+ * retrieve trip deals, and find nearby attractions. It interacts with GpsUtil for GPS related operations,
+ * RewardsService for reward calculations, and TripPricer for retrieving trip deals.
+ *
+ * This class includes methods to retrieve user rewards, user location, user by username, all users,
+ * add a new user, track user location, get nearby attractions, and get trip deals for a user.
+ *
+ * It also initializes internal test users for testing purposes and provides methods for generating user location history.
+ *
+ * The class is designed to handle internal users stored in memory and provides a shutdown hook for stopping the tracker.
+ */
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
@@ -99,12 +111,23 @@ public class TourGuideService {
 		return internalUserMap.values().stream().collect(Collectors.toList());
 	}
 
+	/**
+	 * Adds a new User to the internalUserMap if the user's username is not already present.
+	 *
+	 * @param user the User object to be added
+	 */
 	public void addUser(User user) {
 		if (!internalUserMap.containsKey(user.getUserName())) {
 			internalUserMap.put(user.getUserName(), user);
 		}
 	}
 
+	/**
+	 * Retrieves a list of trip deals for the specified User based on their preferences and rewards.
+	 *
+	 * @param user the User object for which to retrieve trip deals
+	 * @return a list of Provider objects representing the available trip deals for the User
+	 */
 	public List<Provider> getTripDeals(User user) {
 		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
@@ -114,6 +137,13 @@ public class TourGuideService {
 		return providers;
 	}
 
+	/**
+	 * Retrieves the current location of the specified User using the GpsUtil service.
+	 * Adds the visited location to the User's visited locations list and calculates rewards for the User based on the visited location.
+	 *
+	 * @param user the User object for which to track the location
+	 * @return the VisitedLocation object representing the User's current location
+	 */
 	public VisitedLocation trackUserLocation(User user) {
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
@@ -121,6 +151,12 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
+	/**
+	 * Retrieves a list of attractions that are near the specified visited location.
+	 *
+	 * @param visitedLocation the VisitedLocation object representing the location to find nearby attractions for
+	 * @return a list of Attraction objects that are near the visited location
+	 */
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 		List<Attraction> nearbyAttractions = new ArrayList<>();
 		for (Attraction attraction : gpsUtil.getAttractions()) {
