@@ -1,5 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,27 +65,11 @@ public class RewardsService {
 	 *
 	 * @param user the user for whom to calculate rewards
 	 */
-	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		List<Attraction> attractions = gpsUtil.getAttractions();
-
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
-				}
-			}
-		}
-	}
 //	public void calculateRewards(User user) {
+//		List<VisitedLocation> userLocations = user.getVisitedLocations();
 //		List<Attraction> attractions = gpsUtil.getAttractions();
 //
-//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-//		Iterator<VisitedLocation> iterator = userLocations.iterator();
-//		while (iterator.hasNext()) {
-//			VisitedLocation visitedLocation = iterator.next();
+//		for(VisitedLocation visitedLocation : userLocations) {
 //			for(Attraction attraction : attractions) {
 //				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 //					if(nearAttraction(visitedLocation, attraction)) {
@@ -94,6 +79,49 @@ public class RewardsService {
 //			}
 //		}
 //	}
+
+//	public void calculateRewards(User user) {
+//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+//		List<Attraction> attractions = gpsUtil.getAttractions();
+//
+//		Iterator<VisitedLocation> iterator = userLocations.iterator();
+//		while (iterator.hasNext()) {
+//			VisitedLocation visitedLocation = iterator.next();
+//			for (Attraction attraction : attractions) {
+//				boolean alreadyRewarded = false;
+//				for (UserReward reward : user.getUserRewards()) {
+//					if (reward.attraction.attractionName.equals(attraction.attractionName)) {
+//						alreadyRewarded = true;
+//						break;
+//					}
+//				}
+//
+//				if (!alreadyRewarded && nearAttraction(visitedLocation, attraction)) {
+//					user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//				}
+//			}
+//		}
+//	}
+
+	public void calculateRewards(User user) {
+		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		List<Attraction> attractions = gpsUtil.getAttractions();
+
+		Iterator<VisitedLocation> iterator = userLocations.iterator();
+		while (iterator.hasNext()) {
+			VisitedLocation visitedLocation = iterator.next();
+			for(Attraction attraction : attractions) {
+				if(user.getUserRewards()
+						.stream()
+						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName))
+						.count() == 0) {
+					if(nearAttraction(visitedLocation, attraction)) {
+						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+					}
+				}
+			}
+		}
+	}
 
 	/**
 	 * Check if a location is within the proximity range of an attraction.
