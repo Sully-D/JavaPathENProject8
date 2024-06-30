@@ -104,24 +104,34 @@ public class RewardsService {
 //	}
 
 	public void calculateRewards(User user) {
+		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+
+		// Récupérer la liste des attractions
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
+		// Itérer sur les emplacements visités par l'utilisateur
 		Iterator<VisitedLocation> iterator = userLocations.iterator();
 		while (iterator.hasNext()) {
 			VisitedLocation visitedLocation = iterator.next();
+
+			// Pour chaque attraction
 			for(Attraction attraction : attractions) {
+				// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
 				if(user.getUserRewards()
 						.stream()
 						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName))
 						.count() == 0) {
+					// Vérifier si l'emplacement visité est proche de l'attraction
 					if(nearAttraction(visitedLocation, attraction)) {
+						// Ajouter une nouvelle récompense à l'utilisateur
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
 				}
 			}
 		}
 	}
+
 
 	/**
 	 * Check if a location is within the proximity range of an attraction.
@@ -174,6 +184,7 @@ public class RewardsService {
 
 		double nauticalMiles = 60 * Math.toDegrees(angle);
 		double statuteMiles = STATUTE_MILES_PER_NAUTICAL_MILE * nauticalMiles;
+
 		return statuteMiles;
 	}
 
