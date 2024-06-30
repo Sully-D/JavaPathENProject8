@@ -107,6 +107,11 @@ public class TourGuideService {
 		return internalUserMap.get(userName);
 	}
 
+	/**
+	 * Retrieves all the users stored in the internalUserMap and returns them as a list.
+	 *
+	 * @return a list of User objects representing all the users stored in the internalUserMap
+	 */
 	public List<User> getAllUsers() {
 		return internalUserMap.values().stream().collect(Collectors.toList());
 	}
