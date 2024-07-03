@@ -106,9 +106,11 @@ public class RewardsService {
 	public void calculateRewards(User user) {
 		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		System.out.println("Nombre d'emplacements visités: " + userLocations.size());
 
 		// Récupérer la liste des attractions
-		List<Attraction> attractions = gpsUtil.getAttractions();
+		CopyOnWriteArrayList<Attraction> attractions = new CopyOnWriteArrayList<>(gpsUtil.getAttractions());
+		System.out.println("Nombre d'attractions: " + attractions.size());
 
 		// Itérer sur les emplacements visités par l'utilisateur
 		Iterator<VisitedLocation> iterator = userLocations.iterator();
@@ -116,7 +118,9 @@ public class RewardsService {
 			VisitedLocation visitedLocation = iterator.next();
 
 			// Pour chaque attraction
-			for(Attraction attraction : attractions) {
+			Iterator<Attraction> attractionIterator = attractions.iterator();
+			while (attractionIterator.hasNext()) {
+				Attraction attraction = attractionIterator.next();
 				// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
 				if(user.getUserRewards()
 						.stream()
@@ -124,6 +128,7 @@ public class RewardsService {
 						.count() == 0) {
 					// Vérifier si l'emplacement visité est proche de l'attraction
 					if(nearAttraction(visitedLocation, attraction)) {
+						System.out.println("Attraction proche trouvée: " + attraction.attractionName);
 						// Ajouter une nouvelle récompense à l'utilisateur
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
@@ -152,7 +157,8 @@ public class RewardsService {
 	 * @return true if the visited location is near the attraction within the proximity buffer, false otherwise
 	 */
 	private boolean nearAttraction(VisitedLocation visitedLocation, Attraction attraction) {
-		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
+		//return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
+		return !(getDistance(attraction, visitedLocation.location) > proximityBuffer);
 	}
 
 	/**
