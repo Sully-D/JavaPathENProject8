@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
@@ -27,6 +28,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 
+import rewardCentral.RewardCentral;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -60,7 +62,7 @@ public class TourGuideService {
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = rewardsService;
-		
+
 		Locale.setDefault(Locale.US);
 
 		if (testMode) {
@@ -157,9 +159,9 @@ public class TourGuideService {
 	}
 
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
+	public List<String> getNearByAttractions(VisitedLocation visitedLocation) {
 		Map<Attraction, Double> distanceAttractions = new HashMap<>();
-		List<Attraction> nearbyAttractions = new ArrayList<>();
+		List<String> nearbyAttractions = new ArrayList<>();
 		for (Attraction attraction : gpsUtil.getAttractions()) {
 			double distance = rewardsService.getDistance(attraction, visitedLocation.location);
 			distanceAttractions.put(attraction, distance);
@@ -173,7 +175,16 @@ public class TourGuideService {
 				.subList(0, Math.min(5, convertirDistanceAttractionsToList.size()));
 
 		for (Map.Entry<Attraction, Double> attraction : smallestFive) {
-			nearbyAttractions.add(attraction.getKey());
+			List<String> temp = new ArrayList<>();
+			User tempUser = new User(visitedLocation.userId, "temps", "temp", "temp");
+			temp.add("Attractioon name : " + attraction.getKey().attractionName);
+			temp.add("Attraction latitude : " + String.valueOf(attraction.getKey().latitude)
+					+ " Attraction longitude : " + String.valueOf(attraction.getKey().longitude));
+			temp.add("User latitude : " + visitedLocation.location.latitude
+					+ " User longitude : " + visitedLocation.location.longitude);
+			temp.add("Distance user / attraction : " + attraction.getValue());
+			temp.add("Reward points : " + rewardsService.getRewardPoints(attraction.getKey(), tempUser));
+			nearbyAttractions.add(String.valueOf(temp));
 		}
 
 		return nearbyAttractions;

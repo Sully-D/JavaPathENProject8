@@ -125,7 +125,7 @@ public class RewardsService {
 	 * @param user the user for whom to get the reward points
 	 * @return the reward points for the attraction and user
 	 */
-	private int getRewardPoints(Attraction attraction, User user) {
+	public int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}
 
