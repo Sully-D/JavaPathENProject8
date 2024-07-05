@@ -158,7 +158,16 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-
+	/**
+	 * Retrieves a list of nearby attractions based on the visited location.
+	 *
+	 * This method calculates the distance between the visited location and all attractions using the RewardsService.
+	 * It then sorts the attractions based on distance and returns information about the five closest attractions.
+	 * For each nearby attraction, details such as name, latitude, longitude, user's location, distance from user, and reward points are included in the result.
+	 *
+	 * @param visitedLocation the VisitedLocation object representing the user's current location
+	 * @return a list of strings containing information about the five closest attractions to the visited location
+	 */
 	public List<String> getNearByAttractions(VisitedLocation visitedLocation) {
 		Map<Attraction, Double> distanceAttractions = new HashMap<>();
 		List<String> nearbyAttractions = new ArrayList<>();
