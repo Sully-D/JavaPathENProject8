@@ -3,6 +3,7 @@ package com.openclassrooms.tourguide.service;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
@@ -61,75 +62,31 @@ public class RewardsService {
 	}
 
 	/**
-	 * Calculate rewards for a given user based on their visited locations and attractions.
+	 * Calculate rewards for the given user based on their visited locations and attractions.
+	 *
+	 * This method creates a thread-safe copy of the user's visited locations and retrieves the list of attractions.
+	 * It then iterates over the user's visited locations and for each attraction, checks if the user does not already have a reward for it.
+	 * If the user is near the attraction, a new UserReward object is created and added to the user's rewards list.
 	 *
 	 * @param user the user for whom to calculate rewards
 	 */
-//	public void calculateRewards(User user) {
-//		List<VisitedLocation> userLocations = user.getVisitedLocations();
-//		List<Attraction> attractions = gpsUtil.getAttractions();
-//
-//		for(VisitedLocation visitedLocation : userLocations) {
-//			for(Attraction attraction : attractions) {
-//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-//					if(nearAttraction(visitedLocation, attraction)) {
-//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-//					}
-//				}
-//			}
-//		}
-//	}
-
-//	public void calculateRewards(User user) {
-//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-//		List<Attraction> attractions = gpsUtil.getAttractions();
-//
-//		Iterator<VisitedLocation> iterator = userLocations.iterator();
-//		while (iterator.hasNext()) {
-//			VisitedLocation visitedLocation = iterator.next();
-//			for (Attraction attraction : attractions) {
-//				boolean alreadyRewarded = false;
-//				for (UserReward reward : user.getUserRewards()) {
-//					if (reward.attraction.attractionName.equals(attraction.attractionName)) {
-//						alreadyRewarded = true;
-//						break;
-//					}
-//				}
-//
-//				if (!alreadyRewarded && nearAttraction(visitedLocation, attraction)) {
-//					user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-//				}
-//			}
-//		}
-//	}
-
 	public void calculateRewards(User user) {
 		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-		System.out.println("Nombre d'emplacements visités: " + userLocations.size());
 
 		// Récupérer la liste des attractions
-		CopyOnWriteArrayList<Attraction> attractions = new CopyOnWriteArrayList<>(gpsUtil.getAttractions());
-		System.out.println("Nombre d'attractions: " + attractions.size());
+		List<Attraction> attractions = gpsUtil.getAttractions();
 
 		// Itérer sur les emplacements visités par l'utilisateur
-		Iterator<VisitedLocation> iterator = userLocations.iterator();
-		while (iterator.hasNext()) {
+		for (Iterator<VisitedLocation> iterator = userLocations.iterator(); iterator.hasNext();) {
 			VisitedLocation visitedLocation = iterator.next();
-
 			// Pour chaque attraction
-			Iterator<Attraction> attractionIterator = attractions.iterator();
-			while (attractionIterator.hasNext()) {
-				Attraction attraction = attractionIterator.next();
+			for (Attraction attraction : attractions) {
 				// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
 				if(user.getUserRewards()
-						.stream()
-						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName))
-						.count() == 0) {
-					// Vérifier si l'emplacement visité est proche de l'attraction
+                        .stream()
+						.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
 					if(nearAttraction(visitedLocation, attraction)) {
-						System.out.println("Attraction proche trouvée: " + attraction.attractionName);
-						// Ajouter une nouvelle récompense à l'utilisateur
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
 				}
