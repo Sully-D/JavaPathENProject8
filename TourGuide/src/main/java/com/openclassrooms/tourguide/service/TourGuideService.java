@@ -156,18 +156,24 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	/**
-	 * Retrieves a list of attractions that are near the specified visited location.
-	 *
-	 * @param visitedLocation the VisitedLocation object representing the location to find nearby attractions for
-	 * @return a list of Attraction objects that are near the visited location
-	 */
+
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
+		Map<Attraction, Double> distanceAttractions = new HashMap<>();
 		List<Attraction> nearbyAttractions = new ArrayList<>();
 		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
+			double distance = rewardsService.getDistance(attraction, visitedLocation.location);
+			distanceAttractions.put(attraction, distance);
+		}
+
+		List<Map.Entry<Attraction, Double>> convertirDistanceAttractionsToList = new ArrayList<>(distanceAttractions.entrySet());
+
+		convertirDistanceAttractionsToList.sort(Map.Entry.comparingByValue());
+
+		List<Map.Entry<Attraction, Double>> smallestFive = convertirDistanceAttractionsToList
+				.subList(0, Math.min(5, convertirDistanceAttractionsToList.size()));
+
+		for (Map.Entry<Attraction, Double> attraction : smallestFive) {
+			nearbyAttractions.add(attraction.getKey());
 		}
 
 		return nearbyAttractions;
