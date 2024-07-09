@@ -71,25 +71,52 @@ public class RewardsService {
 	 *
 	 * @param user the user for whom to calculate rewards
 	 */
-	public void calculateRewards(User user) {
-		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
-		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+//	public void calculateRewards(User user) {
+//		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
+//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+//
+//		// Récupérer la liste des attractions
+//		List<Attraction> attractions = gpsUtil.getAttractions();
+//
+//		// Itérer sur les emplacements visités par l'utilisateur
+//		for (VisitedLocation visitedLocation : userLocations) {
+//			for (Attraction attraction : attractions) {
+//				// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
+//				if (user.getUserRewards().stream()
+//						.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+//					if (nearAttraction(visitedLocation, attraction)) {
+//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//					}
+//				}
+//			}
+//		}
+//	}
 
-		// Récupérer la liste des attractions
+	public CompletableFuture<Void> calculateRewards(User user) {
+		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
-		// Itérer sur les emplacements visités par l'utilisateur
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				if (user.getUserRewards().stream()
-						.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-					if (nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+				CompletableFuture<Void> future = CompletableFuture.completedFuture(null).thenComposeAsync(ignored -> {
+					if (user.getUserRewards().stream()
+							.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+						if (nearAttraction(visitedLocation, attraction)) {
+							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+						}
 					}
-				}
+					return CompletableFuture.completedFuture(null);
+				});
+
+				futures.add(future);
 			}
 		}
+
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
+
 //	public void calculateRewards(User user) {
 //		// Récupérer la liste des attractions
 //		List<Attraction> attractions = gpsUtil.getAttractions();

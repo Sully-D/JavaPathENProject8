@@ -97,10 +97,10 @@ public class TourGuideService {
 	 */
 	public VisitedLocation getUserLocation(User user) {
 		VisitedLocation visitedLocation =null;
-		Future<VisitedLocation> futureLocation = trackUserLocation(user);
+		CompletableFuture<VisitedLocation> futureLocation = trackUserLocation(user);
 		try {
 			visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
-					: futureLocation.get();
+					: futureLocation.join();
 			return visitedLocation;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -175,19 +175,31 @@ public class TourGuideService {
 //		return visitedLocation;
 //	}
 
-	public Future<VisitedLocation> trackUserLocation(User user) {
+//	public Future<VisitedLocation> trackUserLocation(User user) {
+//
+//		CompletableFuture<VisitedLocation> completableFuture = new CompletableFuture<>();
+//
+//		executorService.submit(() -> {
+//			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+//			user.addToVisitedLocations(visitedLocation);
+//			rewardsService.calculateRewards(user);
+//
+//			completableFuture.complete(visitedLocation);
+//		});
+//        return completableFuture;
+//    }
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		return CompletableFuture.supplyAsync(() -> gpsUtil.getUserLocation(user.getUserId()))
+				.thenApply(visitedLocation -> {
+					user.addToVisitedLocations(visitedLocation);
+					return visitedLocation;
+				})
+				.thenCompose(visitedLocation ->
+						CompletableFuture.supplyAsync(() -> rewardsService.calculateRewards(user))
+								.thenApply(ignored -> visitedLocation)
+				);
+	}
 
-		CompletableFuture<VisitedLocation> completableFuture = new CompletableFuture<>();
-
-		executorService.submit(() -> {
-			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-			user.addToVisitedLocations(visitedLocation);
-			rewardsService.calculateRewards(user);
-
-			completableFuture.complete(visitedLocation);
-		});
-        return completableFuture;
-    }
 	public void shutdown() {
 		executorService.shutdown();
 	}

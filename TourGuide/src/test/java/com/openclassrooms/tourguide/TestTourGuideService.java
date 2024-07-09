@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -31,8 +32,8 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		Future<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.get();
+		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = futureLocation.join();
 		tourGuideService.tracker.stopTracking();
 		assertTrue(visitedLocation.userId.equals(user.getUserId()));
 	}
@@ -88,8 +89,8 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		Future<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.get();
+		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = futureLocation.join();
 
 		tourGuideService.tracker.stopTracking();
 
@@ -105,8 +106,8 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		Future<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.get();
+		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = futureLocation.join();
 
 		List<String> attractions = tourGuideService.getNearByAttractions(visitedLocation);
 
