@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,6 +52,7 @@ public class TourGuideService {
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
+	private final ExecutorService executorService = Executors.newFixedThreadPool(100);
 	boolean testMode = true;
 
 	/**
@@ -94,8 +96,17 @@ public class TourGuideService {
 	 * @return the VisitedLocation object representing the User's visited location
 	 */
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
+		VisitedLocation visitedLocation =null;
+		Future<VisitedLocation> futureLocation = trackUserLocation(user);
+		try {
+			visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
+					: futureLocation.get();
+			return visitedLocation;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			shutdown();
+		}
 		return visitedLocation;
 	}
 
@@ -115,7 +126,7 @@ public class TourGuideService {
 	 * @return a list of User objects representing all the users stored in the internalUserMap
 	 */
 	public List<User> getAllUsers() {
-		return internalUserMap.values().stream().collect(Collectors.toList());
+		return new ArrayList<>(internalUserMap.values());
 	}
 
 	/**
@@ -151,11 +162,31 @@ public class TourGuideService {
 	 * @param user the User object for which to track the location
 	 * @return the VisitedLocation object representing the User's current location
 	 */
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+//	public VisitedLocation trackUserLocation(User user) {
+//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+//		CompletableFuture.runAsync(() -> {
+//			try {
+//				user.addToVisitedLocations(visitedLocation);
+//				rewardsService.calculateRewards(user);
+//			} catch (Exception e) {
+//				System.err.println("Error during calculate rewards: " + e.getMessage());
+//			}
+//		});
+//		return visitedLocation;
+//	}
+
+	public Future<VisitedLocation> trackUserLocation(User user) {
+
+		executorService.submit(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			rewardsService.calculateRewards(user);
+			return visitedLocation;
+		});
+        return null;
+    }
+	public void shutdown() {
+		executorService.shutdown();
 	}
 
 	/**
