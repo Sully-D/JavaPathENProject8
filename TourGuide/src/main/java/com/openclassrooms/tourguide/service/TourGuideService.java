@@ -177,13 +177,16 @@ public class TourGuideService {
 
 	public Future<VisitedLocation> trackUserLocation(User user) {
 
+		CompletableFuture<VisitedLocation> completableFuture = new CompletableFuture<>();
+
 		executorService.submit(() -> {
 			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 			user.addToVisitedLocations(visitedLocation);
 			rewardsService.calculateRewards(user);
-			return visitedLocation;
+
+			completableFuture.complete(visitedLocation);
 		});
-        return null;
+        return completableFuture;
     }
 	public void shutdown() {
 		executorService.shutdown();
