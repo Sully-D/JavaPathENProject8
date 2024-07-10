@@ -3,9 +3,7 @@ package com.openclassrooms.tourguide.service;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 import org.springframework.stereotype.Service;
 
@@ -71,85 +69,36 @@ public class RewardsService {
 	 *
 	 * @param user the user for whom to calculate rewards
 	 */
-//	public void calculateRewards(User user) {
-//		// Créer une copie thread-safe de la liste des emplacements visités par l'utilisateur
-//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-//
-//		// Récupérer la liste des attractions
-//		List<Attraction> attractions = gpsUtil.getAttractions();
-//
-//		// Itérer sur les emplacements visités par l'utilisateur
-//		for (VisitedLocation visitedLocation : userLocations) {
-//			for (Attraction attraction : attractions) {
-//				// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
-//				if (user.getUserRewards().stream()
-//						.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-//					if (nearAttraction(visitedLocation, attraction)) {
-//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-//					}
-//				}
-//			}
-//		}
-//	}
-
 	public CompletableFuture<Void> calculateRewards(User user) {
-		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
+
+		// Utilisation d'un pool de threads pour gérer les tâches asynchrones
+		ExecutorService executorService = Executors.newFixedThreadPool(10);
 
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				CompletableFuture<Void> future = CompletableFuture.completedFuture(null).thenComposeAsync(ignored -> {
-					if (user.getUserRewards().stream()
-							.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-						if (nearAttraction(visitedLocation, attraction)) {
-							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+					synchronized (user) {
+						if (user.getUserRewards().stream()
+								.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+							if (nearAttraction(visitedLocation, attraction)) {
+								user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+							}
 						}
 					}
-					return CompletableFuture.completedFuture(null);
-				});
+				}, executorService);
 
 				futures.add(future);
 			}
 		}
 
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+				.thenRun(executorService::shutdown);
 	}
 
-//	public void calculateRewards(User user) {
-//		// Récupérer la liste des attractions
-//		List<Attraction> attractions = gpsUtil.getAttractions();
-//
-//		// Liste pour stocker les futures des récompenses
-//		List<CompletableFuture<Void>> futures = new ArrayList<>();
-//
-//		// Itérer sur les emplacements visités par l'utilisateur
-//		for (VisitedLocation visitedLocation : user.getVisitedLocations()) {
-//			// Créer une tâche asynchrone pour chaque combinaison d'emplacement visité et d'attraction
-//			for (Attraction attraction : attractions) {
-//				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-//					// Vérifier si l'utilisateur n'a pas déjà une récompense pour cette attraction
-//					if (user.getUserRewards().stream()
-//							.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-//						if (nearAttraction(visitedLocation, attraction)) {
-//							synchronized (user) {
-//								user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-//							}
-//						}
-//					}
-//				});
-//				futures.add(future);
-//			}
-//		}
-//
-//		// Attendre que toutes les tâches soient terminées
-//		try {
-//			CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
-//		} catch (InterruptedException | ExecutionException e) {
-//			e.printStackTrace();
-//		}
-//	}
 
 
 
