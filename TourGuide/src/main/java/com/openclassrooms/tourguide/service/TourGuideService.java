@@ -162,38 +162,15 @@ public class TourGuideService {
 	 * @param user the User object for which to track the location
 	 * @return the VisitedLocation object representing the User's current location
 	 */
-//	public VisitedLocation trackUserLocation(User user) {
-//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-//		CompletableFuture.runAsync(() -> {
-//			try {
-//				user.addToVisitedLocations(visitedLocation);
-//				rewardsService.calculateRewards(user);
-//			} catch (Exception e) {
-//				System.err.println("Error during calculate rewards: " + e.getMessage());
-//			}
-//		});
-//		return visitedLocation;
-//	}
-
-//	public Future<VisitedLocation> trackUserLocation(User user) {
-//
-//		CompletableFuture<VisitedLocation> completableFuture = new CompletableFuture<>();
-//
-//		executorService.submit(() -> {
-//			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-//			user.addToVisitedLocations(visitedLocation);
-//			rewardsService.calculateRewards(user);
-//
-//			completableFuture.complete(visitedLocation);
-//		});
-//        return completableFuture;
-//    }
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		// Etape 1 : Appel asynchrone à gpsUtil.getUserLocation(user.getUserId())
 		return CompletableFuture.supplyAsync(() -> gpsUtil.getUserLocation(user.getUserId()))
+				// Etape 2 : Une fois la localisation obtenue, ajout de cette localisation à la liste des emplacements visités de l'utilisateur
 				.thenApply(visitedLocation -> {
 					user.addToVisitedLocations(visitedLocation);
 					return visitedLocation;
 				})
+				// Etape 3 : Calcul des récompenses de manière asynchrone, puis retour de la localisation visitée
 				.thenCompose(visitedLocation ->
 						CompletableFuture.supplyAsync(() -> rewardsService.calculateRewards(user))
 								.thenApply(ignored -> visitedLocation)
