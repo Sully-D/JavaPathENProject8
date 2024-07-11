@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
+//import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
@@ -32,6 +36,9 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
+	private final ExecutorService executorService = Executors.newFixedThreadPool(1000);
+
+	private final Logger logger = LoggerFactory.getLogger(RewardsService.class);
 
 	/**
 	 * Constructor for RewardsService class.
@@ -69,34 +76,51 @@ public class RewardsService {
 	 *
 	 * @param user the user for whom to calculate rewards
 	 */
+	/*
 	public CompletableFuture<Void> calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
+		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
-
-		// Utilisation d'un pool de threads pour gérer les tâches asynchrones
-		ExecutorService executorService = Executors.newFixedThreadPool(10);
 
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-					synchronized (user) {
-						if (user.getUserRewards().stream()
-								.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-							if (nearAttraction(visitedLocation, attraction)) {
-								user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-							}
+					if (user.getUserRewards().stream()
+							.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+						if (nearAttraction(visitedLocation, attraction)) {
+							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 						}
 					}
-				}, executorService);
-
-				futures.add(future);
 			}
 		}
+        return null;
+    }*/
+	public CompletableFuture<Void> calculateRewards(User user) {
+		List<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		List<Attraction> attractions = gpsUtil.getAttractions();
+		List<UserReward> userRewards = new CopyOnWriteArrayList<>(user.getUserRewards());
+
+		List<CompletableFuture<Void>> futures = userLocations.stream()
+				.map(visitedLocation -> CompletableFuture.runAsync(() -> {
+					List<Attraction> nonRewardedAttractions = attractions.stream()
+							.filter(attraction -> userRewards.parallelStream()
+									.noneMatch(userReward -> userReward.attraction.attractionName.equals(attraction.attractionName)))
+							.collect(Collectors.toList());
+
+					nonRewardedAttractions.forEach(attraction -> {
+						if (nearAttraction(visitedLocation, attraction)) {
+							userRewards.add(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+						}
+					});
+				}, executorService))
+				.collect(Collectors.toList());
 
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-				.thenRun(executorService::shutdown);
+				.thenRun(() -> user.setUserRewards(userRewards))
+				.exceptionally(exception -> {
+					logger.error("Error calculating rewards for user: {}", user.getUserName(), exception);
+					return null;
+				});
 	}
 
 

@@ -25,6 +25,7 @@ public class User {
 		this.emailAddress = emailAddress;
 	}
 	
+	
 	public UUID getUserId() {
 		return userId;
 	}
@@ -100,4 +101,6 @@ public class User {
 		return tripDeals;
 	}
 
+	public void setUserRewards(List<UserReward> userRewards) {
+	}
 }
