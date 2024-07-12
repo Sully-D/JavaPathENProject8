@@ -32,10 +32,9 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.join();
+		CompletableFuture<VisitedLocation> visitedLocation = tourGuideService.trackUserLocation(user);
 		tourGuideService.tracker.stopTracking();
-		assertTrue(visitedLocation.userId.equals(user.getUserId()));
+		assertTrue(visitedLocation.get().userId.equals(user.getUserId()));
 	}
 
 	@Test
@@ -89,12 +88,11 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.join();
+		CompletableFuture<VisitedLocation> visitedLocation = tourGuideService.trackUserLocation(user);
 
 		tourGuideService.tracker.stopTracking();
 
-		assertEquals(user.getUserId(), visitedLocation.userId);
+		assertEquals(user.getUserId(), visitedLocation.get().userId);
 	}
 
 	//@Disabled // Not yet implemented
@@ -106,14 +104,13 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = futureLocation.join();
+		CompletableFuture<VisitedLocation> visitedLocation = tourGuideService.trackUserLocation(user);
 
-		List<String> attractions = tourGuideService.getNearByAttractions(visitedLocation);
+		CompletableFuture<List<String>> attractions = tourGuideService.getNearByAttractions(visitedLocation);
 
 		tourGuideService.tracker.stopTracking();
 
-		assertEquals(5, attractions.size());
+		assertEquals(5, attractions.get().size());
 	}
 
 	public void getTripDeals() {

@@ -37,9 +37,9 @@ public class TestRewardsService {
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
 
-		CompletableFuture<VisitedLocation> futureLocation = tourGuideService.trackUserLocation(user);
-		CompletableFuture<Void> futureRewards = rewardsService.calculateRewards(user);
-		CompletableFuture.allOf(futureLocation, futureRewards).join();
+		// trackUserLocation est maintenant asynchrone, donc nous devons attendre sa complétion
+		CompletableFuture<VisitedLocation> trackUserLocationFuture = tourGuideService.trackUserLocation(user);
+		trackUserLocationFuture.join();  // Attendre que trackUserLocation soit terminé
 
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
@@ -64,9 +64,11 @@ public class TestRewardsService {
 		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
-		CompletableFuture<Void> futureCalculateReward = rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
-		futureCalculateReward.join();
-		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
+		User user = tourGuideService.getAllUsers().get(0);
+		rewardsService.calculateRewards(user).join();  // Attendre que calculateRewards soit terminé
+
+		List<UserReward> userRewards = tourGuideService.getUserRewards(user);
+
 		tourGuideService.tracker.stopTracking();
 
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());

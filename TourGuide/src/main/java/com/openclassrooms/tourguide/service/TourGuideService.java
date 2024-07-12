@@ -95,20 +95,14 @@ public class TourGuideService {
 	 * @param user the User object for which to retrieve the visited location
 	 * @return the VisitedLocation object representing the User's visited location
 	 */
-	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation =null;
-		CompletableFuture<VisitedLocation> futureLocation = trackUserLocation(user);
-		try {
-			visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
-					: futureLocation.join();
-			return visitedLocation;
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			shutdown();
+	public CompletableFuture<VisitedLocation> getUserLocation(User user) {
+		if (user.getVisitedLocations().size() > 0) {
+			return CompletableFuture.completedFuture(user.getLastVisitedLocation());
+		} else {
+			return trackUserLocation(user);
 		}
-		return visitedLocation;
 	}
+
 
 	/**
 	 * Retrieves the User object associated with the specified userName.
@@ -162,20 +156,22 @@ public class TourGuideService {
 	 * @param user the User object for which to track the location
 	 * @return the VisitedLocation object representing the User's current location
 	 */
+//	public VisitedLocation trackUserLocation(User user) {
+//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+//		user.addToVisitedLocations(visitedLocation);
+//		rewardsService.calculateRewards(user);
+//		return visitedLocation;
+//	}
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
-		// Etape 1 : Appel asynchrone à gpsUtil.getUserLocation(user.getUserId())
-		return CompletableFuture.supplyAsync(() -> gpsUtil.getUserLocation(user.getUserId()))
-				// Etape 2 : Une fois la localisation obtenue, ajout de cette localisation à la liste des emplacements visités de l'utilisateur
-				.thenApply(visitedLocation -> {
-					user.addToVisitedLocations(visitedLocation);
-					return visitedLocation;
-				})
-				// Etape 3 : Calcul des récompenses de manière asynchrone, puis retour de la localisation visitée
-				.thenCompose(visitedLocation ->
-						CompletableFuture.supplyAsync(() -> rewardsService.calculateRewards(user))
-								.thenApply(ignored -> visitedLocation)
-				);
+		return CompletableFuture.supplyAsync(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			// Attendre que calculateRewards soit terminé
+			rewardsService.calculateRewards(user).join();
+			return visitedLocation;
+		}, executorService);
 	}
+
 
 	public void shutdown() {
 		executorService.shutdown();
@@ -191,36 +187,39 @@ public class TourGuideService {
 	 * @param visitedLocation the VisitedLocation object representing the user's current location
 	 * @return a list of strings containing information about the five closest attractions to the visited location
 	 */
-	public List<String> getNearByAttractions(VisitedLocation visitedLocation) {
-		Map<Attraction, Double> distanceAttractions = new HashMap<>();
-		List<String> nearbyAttractions = new ArrayList<>();
-		for (Attraction attraction : gpsUtil.getAttractions()) {
-			double distance = rewardsService.getDistance(attraction, visitedLocation.location);
-			distanceAttractions.put(attraction, distance);
-		}
+	public CompletableFuture<List<String>> getNearByAttractions(CompletableFuture<VisitedLocation> visitedLocationFuture) {
+		return visitedLocationFuture.thenApply(visitedLocation -> {
+			Map<Attraction, Double> distanceAttractions = new HashMap<>();
+			List<String> nearbyAttractions = new ArrayList<>();
+			for (Attraction attraction : gpsUtil.getAttractions()) {
+				double distance = rewardsService.getDistance(attraction, visitedLocation.location);
+				distanceAttractions.put(attraction, distance);
+			}
 
-		List<Map.Entry<Attraction, Double>> convertirDistanceAttractionsToList = new ArrayList<>(distanceAttractions.entrySet());
+			List<Map.Entry<Attraction, Double>> convertirDistanceAttractionsToList = new ArrayList<>(distanceAttractions.entrySet());
 
-		convertirDistanceAttractionsToList.sort(Map.Entry.comparingByValue());
+			convertirDistanceAttractionsToList.sort(Map.Entry.comparingByValue());
 
-		List<Map.Entry<Attraction, Double>> smallestFive = convertirDistanceAttractionsToList
-				.subList(0, Math.min(5, convertirDistanceAttractionsToList.size()));
+			List<Map.Entry<Attraction, Double>> smallestFive = convertirDistanceAttractionsToList
+					.subList(0, Math.min(5, convertirDistanceAttractionsToList.size()));
 
-		for (Map.Entry<Attraction, Double> attraction : smallestFive) {
-			List<String> temp = new ArrayList<>();
-			User tempUser = new User(visitedLocation.userId, "temps", "temp", "temp");
-			temp.add("Attractioon name : " + attraction.getKey().attractionName);
-			temp.add("Attraction latitude : " + String.valueOf(attraction.getKey().latitude)
-					+ " Attraction longitude : " + String.valueOf(attraction.getKey().longitude));
-			temp.add("User latitude : " + visitedLocation.location.latitude
-					+ " User longitude : " + visitedLocation.location.longitude);
-			temp.add("Distance user / attraction : " + attraction.getValue());
-			temp.add("Reward points : " + rewardsService.getRewardPoints(attraction.getKey(), tempUser));
-			nearbyAttractions.add(String.valueOf(temp));
-		}
+			for (Map.Entry<Attraction, Double> attraction : smallestFive) {
+				List<String> temp = new ArrayList<>();
+				User tempUser = new User(visitedLocation.userId, "temps", "temp", "temp");
+				temp.add("Attraction name : " + attraction.getKey().attractionName);
+				temp.add("Attraction latitude : " + String.valueOf(attraction.getKey().latitude)
+						+ " Attraction longitude : " + String.valueOf(attraction.getKey().longitude));
+				temp.add("User latitude : " + visitedLocation.location.latitude
+						+ " User longitude : " + visitedLocation.location.longitude);
+				temp.add("Distance user / attraction : " + attraction.getValue());
+				temp.add("Reward points : " + rewardsService.getRewardPoints(attraction.getKey(), tempUser));
+				nearbyAttractions.add(String.valueOf(temp));
+			}
 
-		return nearbyAttractions;
+			return nearbyAttractions;
+		});
 	}
+
 
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
