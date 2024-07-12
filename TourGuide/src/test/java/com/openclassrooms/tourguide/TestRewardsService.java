@@ -37,9 +37,8 @@ public class TestRewardsService {
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
 
-		// trackUserLocation est maintenant asynchrone, donc nous devons attendre sa complétion
 		CompletableFuture<VisitedLocation> trackUserLocationFuture = tourGuideService.trackUserLocation(user);
-		trackUserLocationFuture.join();  // Attendre que trackUserLocation soit terminé
+		trackUserLocationFuture.join();
 
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
@@ -54,7 +53,6 @@ public class TestRewardsService {
 		assertTrue(rewardsService.isWithinAttractionProximity(attraction, attraction));
 	}
 
-	//@Disabled // Needs fixed - can throw ConcurrentModificationException
 	@Test
 	public void nearAllAttractions() {
 		GpsUtil gpsUtil = new GpsUtil();
@@ -65,7 +63,7 @@ public class TestRewardsService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = tourGuideService.getAllUsers().get(0);
-		rewardsService.calculateRewards(user).join();  // Attendre que calculateRewards soit terminé
+		rewardsService.calculateRewards(user).join();
 
 		List<UserReward> userRewards = tourGuideService.getUserRewards(user);
 

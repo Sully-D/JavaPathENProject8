@@ -39,11 +39,9 @@ public class Tracker extends Thread {
 	}
 
 	/**
-	 * This method represents the main logic of the Tracker thread.
-	 * It continuously tracks the users by fetching all users from the TourGuideService,
-	 * tracking their locations, and calculating the time elapsed for tracking each user.
-	 * The method also handles the interruption and stopping of the thread based on the stop flag.
-	 * It sleeps for a specified interval before starting the next iteration of tracking.
+	 * Executes the tracking process continuously by retrieving all users from the TourGuideService,
+	 * tracking their locations in parallel, and logging the tracking progress.
+	 * Stops the tracking process if the current thread is interrupted or the stop flag is set to true.
 	 */
 	@Override
 	public void run() {
@@ -55,16 +53,16 @@ public class Tracker extends Thread {
 			}
 
 			List<User> users = tourGuideService.getAllUsers();
+
 			logger.debug("Begin Tracker. Tracking " + users.size() + " users.");
-			//stopWatch.start();
+
 			long startTime = System.currentTimeMillis();
-			//users.forEach(tourGuideService::trackUserLocation);
-			//stopWatch.stop();
-			//logger.debug("Tracker Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
-			//stopWatch.reset();
+
 			users.parallelStream().forEach(tourGuideService::trackUserLocation);
+
 			long elapsedTime = System.currentTimeMillis() - startTime;
 			logger.debug("Tracker Time Elapsed: {} seconds.", TimeUnit.MILLISECONDS.toSeconds(elapsedTime));
+
 			try {
 				logger.debug("Tracker sleeping");
 				TimeUnit.SECONDS.sleep(trackingPollingInterval);

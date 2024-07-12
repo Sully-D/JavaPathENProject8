@@ -88,12 +88,13 @@ public class TourGuideService {
 	}
 
 	/**
-	 * Retrieves the visited location of the specified User. If the User has visited locations recorded,
-	 * the method returns the last visited location. Otherwise, it tracks the User's current location
-	 * using the trackUserLocation method and returns the visited location.
+	 * Retrieves the user's location asynchronously.
 	 *
-	 * @param user the User object for which to retrieve the visited location
-	 * @return the VisitedLocation object representing the User's visited location
+	 * If the user has visited locations, returns a completed future with the last visited location.
+	 * Otherwise, initiates tracking the user's location and returns a future with the visited location once available.
+	 *
+	 * @param user the User object for which to retrieve the location
+	 * @return a CompletableFuture containing the VisitedLocation object representing the user's current or last known location
 	 */
 	public CompletableFuture<VisitedLocation> getUserLocation(User user) {
 		if (user.getVisitedLocations().size() > 0) {
@@ -150,42 +151,27 @@ public class TourGuideService {
 	}
 
 	/**
-	 * Retrieves the current location of the specified User using the GpsUtil service.
-	 * Adds the visited location to the User's visited locations list and calculates rewards for the User based on the visited location.
+	 * Asynchronously tracks the location of a user by retrieving the visited location using GPSUtil,
+	 * adding it to the user's visited locations, calculating rewards for the user using RewardsService,
+	 * and returning the visited location as a CompletableFuture.
 	 *
-	 * @param user the User object for which to track the location
-	 * @return the VisitedLocation object representing the User's current location
+	 * @param user the User object for whom to track the location
+	 * @return a CompletableFuture containing the VisitedLocation object representing the user's current or last known location
 	 */
-//	public VisitedLocation trackUserLocation(User user) {
-//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-//		user.addToVisitedLocations(visitedLocation);
-//		rewardsService.calculateRewards(user);
-//		return visitedLocation;
-//	}
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
 		return CompletableFuture.supplyAsync(() -> {
 			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 			user.addToVisitedLocations(visitedLocation);
-			// Attendre que calculateRewards soit terminé
 			rewardsService.calculateRewards(user).join();
 			return visitedLocation;
 		}, executorService);
 	}
 
-
-	public void shutdown() {
-		executorService.shutdown();
-	}
-
 	/**
-	 * Retrieves a list of nearby attractions based on the visited location.
+	 * Retrieves a list of nearby attractions based on the visited location of a user.
 	 *
-	 * This method calculates the distance between the visited location and all attractions using the RewardsService.
-	 * It then sorts the attractions based on distance and returns information about the five closest attractions.
-	 * For each nearby attraction, details such as name, latitude, longitude, user's location, distance from user, and reward points are included in the result.
-	 *
-	 * @param visitedLocation the VisitedLocation object representing the user's current location
-	 * @return a list of strings containing information about the five closest attractions to the visited location
+	 * @param visitedLocationFuture a CompletableFuture containing the VisitedLocation object representing the user's current or last known location
+	 * @return a CompletableFuture containing a list of nearby attractions with details such as name, coordinates, distance from the user, and reward points
 	 */
 	public CompletableFuture<List<String>> getNearByAttractions(CompletableFuture<VisitedLocation> visitedLocationFuture) {
 		return visitedLocationFuture.thenApply(visitedLocation -> {
@@ -220,7 +206,10 @@ public class TourGuideService {
 		});
 	}
 
-
+	/**
+	 * Adds a shutdown hook to gracefully stop the tracking process when the application is shutting down.
+	 * Calls the 'stopTracking' method of the 'tracker' instance to stop tracking users.
+	 */
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {

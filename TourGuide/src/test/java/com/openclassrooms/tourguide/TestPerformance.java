@@ -60,19 +60,14 @@ public class TestPerformance {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 
-		// Liste des CompletableFutures
 		List<CompletableFuture<VisitedLocation>> futures = new ArrayList<>();
 
 		for (User user : allUsers) {
-			// Ajoutez les CompletableFutures de trackUserLocation à la liste
 			futures.add(tourGuideService.trackUserLocation(user));
 		}
 
-		// Attendre que tous les CompletableFutures soient terminés
 		CompletableFuture<Void> allTracking = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-		allTracking.join();  // Attendre que toutes les tâches async soient terminées
-
-
+		allTracking.join();
 
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
@@ -103,19 +98,17 @@ public class TestPerformance {
 
 		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
-		//allUsers.forEach(rewardsService::calculateRewards);
 		CompletableFuture<Void> allCalculations = CompletableFuture.allOf(
 				allUsers.stream()
 						.map(rewardsService::calculateRewards)
 						.toArray(CompletableFuture[]::new)
 		);
 
-		allCalculations.join(); // Wait for all async tasks to complete
+		allCalculations.join();
 
 		for (User user : allUsers) {
 			assertFalse(user.getUserRewards().isEmpty());
 		}
-
 
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
