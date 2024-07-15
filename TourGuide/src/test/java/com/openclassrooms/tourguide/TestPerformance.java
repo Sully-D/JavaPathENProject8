@@ -51,7 +51,7 @@ public class TestPerformance {
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		// Users should be incremented up to 100,000, and test finishes within 15
 		// minutes
-		InternalTestHelper.setInternalUserNumber(1000);
+		InternalTestHelper.setInternalUserNumber(100000);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		List<User> allUsers = new ArrayList<>();
@@ -74,9 +74,6 @@ public class TestPerformance {
 
 		System.out.println("highVolumeTrackLocation: Time Elapsed: "
 				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
-		System.out.println("highVolumeTrackLocation: Time Elapsed: "
-				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime())*100/60
-				+ " minutes.");
 		assertTrue(TimeUnit.MINUTES.toSeconds(15) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 
@@ -115,9 +112,6 @@ public class TestPerformance {
 
 		System.out.println("highVolumeGetRewards: Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime())
 				+ " seconds.");
-		System.out.println("highVolumeGetRewards: Time Elapsed: "
-				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime())*100/60
-				+ " minutes.");
 		assertTrue(TimeUnit.MINUTES.toSeconds(20) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 
