@@ -25,4 +25,4 @@ jobs:
 
       - name: Build with Maven
         run: mvn --batch-mode clean install
-        working-directory: TourGuide/.github/workflows/maven.yml
+        working-directory: ./TourGuide/pom.xml
