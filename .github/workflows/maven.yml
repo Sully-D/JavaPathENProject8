@@ -34,3 +34,6 @@ jobs:
 
       - name: Build with Maven
         run: mvn --batch-mode clean install --file ./TourGuide/pom.xml
+
+      - name: Run tests with Maven
+        run: mvn test --file ./TourGuide/pom.xml
