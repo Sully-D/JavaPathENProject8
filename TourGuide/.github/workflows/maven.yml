@@ -23,6 +23,9 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven
 
+      - name: Change directory to TourGuide
+        run: cd TourGuide
+
       - name: Build with Maven
         run: mvn --batch-mode clean install
-        working-directory: TourGuide
+        working-directory: ./TourGuide
