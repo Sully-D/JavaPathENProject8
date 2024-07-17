@@ -25,6 +25,7 @@ public class User {
 		this.emailAddress = emailAddress;
 	}
 	
+	
 	public UUID getUserId() {
 		return userId;
 	}
@@ -70,7 +71,8 @@ public class User {
 	}
 	
 	public void addUserReward(UserReward userReward) {
-		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		if(userRewards.stream()
+				.noneMatch(r -> r.attraction.attractionName.equals(userReward.attraction.attractionName))) {
 			userRewards.add(userReward);
 		}
 	}
@@ -99,4 +101,6 @@ public class User {
 		return tripDeals;
 	}
 
+	public void setUserRewards(List<UserReward> userRewards) {
+	}
 }
