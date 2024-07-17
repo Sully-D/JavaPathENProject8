@@ -24,8 +24,8 @@ jobs:
           restore-keys: ${{ runner.os }}-maven
 
       - name: Install gpsUtil dependency
-        run: mvn install:install-file -Dfile=./libs/gpsUtil.jar -DgroupId=gpsUtil -DartifactId=gpsUtil -Dversion=1.0.0 -Dpackaging=jar
-        working-directory: ./TourGuide/libs/gpsUtil.jar
+        run: mvn install:install-file -Dfile=gpsUtil.jar -DgroupId=gpsUtil -DartifactId=gpsUtil -Dversion=1.0.0 -Dpackaging=jar
+        working-directory: ./TourGuide/libs/
 
       - name: Install RewardCentral dependency
         run: mvn install:install-file -Dfile=./libs/RewardCentral.jar -DgroupId=rewardCentral -DartifactId=rewardCentral -Dversion=1.0.0 -Dpackaging=jar
